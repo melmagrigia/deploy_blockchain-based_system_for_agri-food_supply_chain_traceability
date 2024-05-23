@@ -28,10 +28,9 @@ const certDirectoryPath = envOrDefault('CERT_DIRECTORY_PATH', path.resolve(crypt
 const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.org1.example.com', 'tls', 'ca.crt'));
 
 // Gateway peer endpoint.
-const peerEndpoint = 'peer0-org1.localho.st:443';
 
-// Gateway peer SSL host name override.
-const peerHostAlias = 'peer0-org1.localho.st:443';
+const peerEndpoint = process.env.PEER_ENDPOINT || '10.43.65.41:443';
+// const peerEndpoint = 'peer0-org1.localho.st:443';
 // org1-peer0.default
 const utf8Decoder = new TextDecoder();
 
@@ -141,5 +140,4 @@ async function displayInputParameters(): Promise<void> {
     console.log(`certDirectoryPath: ${certDirectoryPath}`);
     console.log(`tlsCertPath:       ${tlsCertPath}`);
     console.log(`peerEndpoint:      ${peerEndpoint}`);
-    console.log(`peerHostAlias:     ${peerHostAlias}`);
 }

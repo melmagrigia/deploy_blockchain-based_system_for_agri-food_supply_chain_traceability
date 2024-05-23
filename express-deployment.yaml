@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: express-deployment
+  labels:
+    app: express
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: express
+  template:
+    metadata:
+      labels:
+        app: express
+    spec:
+      containers:
+      - name: express
+        image: pablomelma/my-express-server:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: CLIENT_URL
+          value: "http://react-service:4000"  # Replace with the actual client service URL
+        - name: PORT
+          value: "3000"
+        - name: PEER_ENDPOINT
+          value: "org1-peer0.default:443"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: express-service
+spec:
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+    nodePort: 30200  # Ensure this port is within the NodePort range (30000-32767)
+  selector:
+    app: express

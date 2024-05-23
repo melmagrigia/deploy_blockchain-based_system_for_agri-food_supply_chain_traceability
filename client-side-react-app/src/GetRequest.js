@@ -5,7 +5,7 @@ const GetRequest = () => {
     const [data, setData] = useState(null);
 
     const fetchData = () => {
-        axios.get('http://localhost:3000/get-all-assets')
+        axios.get(`${process.env.REACT_APP_API_URL}/get-all-assets`)
         .then(response => {
             console.log('Success:', response.data);
             setData(response.data);

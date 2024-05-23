@@ -16,6 +16,9 @@ COPY . .
 # Compile TypeScript code to JavaScript
 RUN npm run build
 
+# Copy .env file to the Docker container
+COPY .env .env
+
 # Expose port 3000 to the outside world
 EXPOSE 3000
 

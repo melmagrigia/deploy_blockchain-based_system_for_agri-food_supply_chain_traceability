@@ -1,11 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors'); // Import the cors middleware
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Use CORS middleware
 app.use(cors({
-    origin: 'http://localhost:4000', // Allow requests from this origin
+    origin: process.env.CLIENT_URL || 'http://localhost:4000', // Allow requests from this origin
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allow these HTTP methods
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 }));

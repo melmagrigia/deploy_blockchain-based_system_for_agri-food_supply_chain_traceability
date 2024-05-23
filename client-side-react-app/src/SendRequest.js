@@ -3,7 +3,7 @@ import axios from 'axios';
 
 class SendRequest extends React.Component {
     sendHttpRequest = () => {
-        axios.post('http://localhost:3000/create-asset', {
+        axios.post(`${process.env.REACT_APP_API_URL}/create-asset`, {
             message: 'Hello, server!'
         })
         .then(response => {

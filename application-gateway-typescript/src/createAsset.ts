@@ -9,7 +9,6 @@ import { connect, Contract, Identity, Signer, signers } from '@hyperledger/fabri
 import * as crypto from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { TextDecoder } from 'util';
 
 const channelName = envOrDefault('CHANNEL_NAME', 'demo');
 const chaincodeName = envOrDefault('CHAINCODE_NAME', 'asset');
@@ -28,10 +27,9 @@ const certDirectoryPath = envOrDefault('CERT_DIRECTORY_PATH', path.resolve(crypt
 const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.org1.example.com', 'tls', 'ca.crt'));
 
 // Gateway peer endpoint.
-const peerEndpoint = 'peer0-org1.localho.st:443';
+const peerEndpoint = process.env.PEER_ENDPOINT || '10.43.65.41:443';
 
 // org1-peer0.default
-const utf8Decoder = new TextDecoder();
 const assetId = `asset${Date.now()}`;
 
 async function mainCreate(): Promise<void> {
