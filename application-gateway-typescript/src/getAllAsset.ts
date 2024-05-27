@@ -29,7 +29,7 @@ const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peer
 
 // Gateway peer endpoint.
 
-const peerEndpoint = process.env.PEER_ENDPOINT || '10.43.65.41:443';
+const peerEndpoint = process.env.PEER_ENDPOINT || 'peer0-org1.localho.st:443';
 // const peerEndpoint = 'peer0-org1.localho.st:443';
 // org1-peer0.default
 const utf8Decoder = new TextDecoder();

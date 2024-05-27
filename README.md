@@ -896,6 +896,28 @@ kubectl hlf chaincode commit --config=org1.yaml --user=org1-admin-default --mspi
     --policy="${ENDORSEMENT_POLICY}" --channel=demo
 ```
 
+## 12. Deploy the Web Server and the Application Server
+
+Now we deploy the application server with the mongo DB and the web server. 
+For simplicity we deploy show the steps to deploy just the one for the Maintainer MSP Organization
+If you want to deploy them for each organization just change the app names in both the YAML files.
+Accessing the react app from the browser also the REACT_APP_API_URL in the confimap.yaml 
+must be configured properly, for local deployments set it with the kube node address. 
+
+```bash
+kubectl apply -f mongo-config.yaml
+kubectl apply -f mongo-secret.yaml
+kubectl apply -f mongo.yaml
+kubectl apply -f express-deployment.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f react-deployment.yaml
+```
+missing somthing about the certificate need to establish the gateway !! 
+
+## 13. Test the system 
+Go with your browser to the right url and the port exposed by the web server
+
+
 ## 12. Invoke a transaction on the channel
 
 Now that we have committed the chaincode to the channel, we can interact with it.

@@ -27,7 +27,7 @@ const certDirectoryPath = envOrDefault('CERT_DIRECTORY_PATH', path.resolve(crypt
 const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.org1.example.com', 'tls', 'ca.crt'));
 
 // Gateway peer endpoint.
-const peerEndpoint = process.env.PEER_ENDPOINT || '10.43.65.41:443';
+const peerEndpoint = process.env.PEER_ENDPOINT || 'peer0-org1.localho.st:443';
 
 // org1-peer0.default
 const assetId = `asset${Date.now()}`;

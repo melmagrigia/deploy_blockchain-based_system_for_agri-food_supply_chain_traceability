@@ -21,11 +21,26 @@ spec:
         - containerPort: 3000
         env:
         - name: CLIENT_URL
-          value: "http://react-service:4000"  # Replace with the actual client service URL
+          value: "http://react-service:4000"
         - name: PORT
           value: "3000"
         - name: PEER_ENDPOINT
           value: "org1-peer0.default:443"
+        - name: USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: USER_PWD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password
+        - name: DB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-config
+              key: mongo-url
 ---
 apiVersion: v1
 kind: Service
@@ -37,6 +52,6 @@ spec:
   - protocol: TCP
     port: 3000
     targetPort: 3000
-    nodePort: 30200  # Ensure this port is within the NodePort range (30000-32767)
+    nodePort: 30200
   selector:
     app: express

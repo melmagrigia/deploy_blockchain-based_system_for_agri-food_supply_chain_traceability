@@ -8,7 +8,6 @@ function App() {
             <header className="App-header">
                 <h1>HTTP Request Example</h1>
                 <SendRequest />
-                <GetRequest />
             </header>
         </div>
     );
