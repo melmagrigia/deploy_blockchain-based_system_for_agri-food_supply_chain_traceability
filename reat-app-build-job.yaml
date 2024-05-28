@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: react-app-build
+spec:
+  template:
+    spec:
+      containers:
+      - name: build-container
+        image: pablomelma/client-side-react-app:latest
+        command: ["sh", "-c", "npm install && npm run build && cp -r /app/build/* /output/"]
+        # Add environment variables if needed
+        envFrom:
+        - configMapRef:
+            name: react-app-config
+        volumeMounts:
+        - name: build-volume
+          mountPath: /output
+      restartPolicy: Never
+      volumes:
+      - name: build-volume
+        persistentVolumeClaim:
+          claimName: react-app-build-pvc

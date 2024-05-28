@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-react-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-react-app
+  template:
+    metadata:
+      labels:
+        app: nginx-react-app
+    spec:
+      containers:
+      - name: nginx
+        image: pablomelma/ngnix-app:latest
+        ports:
+        - containerPort: 4000
+        volumeMounts:
+        - name: build-volume
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: build-volume
+        persistentVolumeClaim:
+          claimName: react-app-build-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: react-service
+spec:
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 4000
+    targetPort: 4000
+    nodePort: 30100
+  selector:
+    app: nginx-react-app

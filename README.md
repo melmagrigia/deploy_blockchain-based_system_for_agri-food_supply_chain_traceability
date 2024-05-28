@@ -908,6 +908,7 @@ must be configured properly, for local deployments set it with the kube node add
 kubectl apply -f mongo-config.yaml
 kubectl apply -f mongo-secret.yaml
 kubectl apply -f mongo.yaml
+kubectl create secret generic express-certificates --from-file=test-network/
 kubectl apply -f express-deployment.yaml
 kubectl apply -f configmap.yaml
 kubectl apply -f react-deployment.yaml

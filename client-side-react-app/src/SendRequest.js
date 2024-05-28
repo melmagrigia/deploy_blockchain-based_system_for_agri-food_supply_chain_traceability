@@ -5,7 +5,7 @@ const SendRequest = () => {
   const [postResult, setPostResult] = useState(null);
   const [getResult, setGetResult] = useState(null);
   
-  const apiUrl = window._env_.REACT_APP_API_URL;
+  const apiUrl = process.env.REACT_APP_API_URL;
 
   const handlePostRequest = async () => {
     try {

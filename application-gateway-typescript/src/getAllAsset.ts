@@ -90,8 +90,8 @@ async function newGrpcConnection(): Promise<grpc.Client> {
 }
 
 async function newIdentity(): Promise<Identity> {
-    const certPath = await getFirstDirFileName(certDirectoryPath);
-    const credentials = await fs.readFile(certPath);
+    // const certPath = await getFirstDirFileName(certDirectoryPath);
+    const credentials = await fs.readFile(certDirectoryPath);
     return { mspId, credentials };
 }
 
@@ -101,8 +101,8 @@ async function getFirstDirFileName(dirPath: string): Promise<string> {
 }
 
 async function newSigner(): Promise<Signer> {
-    const keyPath = await getFirstDirFileName(keyDirectoryPath);
-    const privateKeyPem = await fs.readFile(keyPath);
+    // const keyPath = await getFirstDirFileName(keyDirectoryPath);
+    const privateKeyPem = await fs.readFile(keyDirectoryPath);
     const privateKey = crypto.createPrivateKey(privateKeyPem);
     return signers.newPrivateKeySigner(privateKey);
 }
