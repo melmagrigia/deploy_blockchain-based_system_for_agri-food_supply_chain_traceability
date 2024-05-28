@@ -30,9 +30,8 @@ const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peer
 const peerEndpoint = process.env.PEER_ENDPOINT || 'peer0-org1.localho.st:443';
 
 // org1-peer0.default
-const assetId = `asset${Date.now()}`;
 
-async function mainCreate(): Promise<void> {
+export async function mainCreate(): Promise<void> {
 
     await displayInputParameters();
 
@@ -87,8 +86,8 @@ async function newGrpcConnection(): Promise<grpc.Client> {
 }
 
 async function newIdentity(): Promise<Identity> {
-    const certPath = await getFirstDirFileName(certDirectoryPath);
-    const credentials = await fs.readFile(certPath);
+    // const certPath = await getFirstDirFileName(certDirectoryPath);
+    const credentials = await fs.readFile(certDirectoryPath);
     return { mspId, credentials };
 }
 
@@ -98,8 +97,8 @@ async function getFirstDirFileName(dirPath: string): Promise<string> {
 }
 
 async function newSigner(): Promise<Signer> {
-    const keyPath = await getFirstDirFileName(keyDirectoryPath);
-    const privateKeyPem = await fs.readFile(keyPath);
+    // const keyPath = await getFirstDirFileName(keyDirectoryPath);
+    const privateKeyPem = await fs.readFile(keyDirectoryPath);
     const privateKey = crypto.createPrivateKey(privateKeyPem);
     return signers.newPrivateKeySigner(privateKey);
 }
@@ -108,6 +107,7 @@ async function newSigner(): Promise<Signer> {
  * Submit a transaction synchronously, blocking until it has been committed to the ledger.
  */
 async function createAsset(contract: Contract): Promise<void> {
+    const assetId = `asset${Date.now()}`;
     console.log('\n--> Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments');
 
     await contract.submitTransaction(
