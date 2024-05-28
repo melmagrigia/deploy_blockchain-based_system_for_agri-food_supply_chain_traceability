@@ -1,13 +1,8 @@
 # Deploy Blockchain-based System for Agri-Food Supply Chain Traceability
 
-# Workshop to create your first HLF network
-
-This workshop is divided in this steps:
-
-- [Workshop to create your first HLF network](#workshop-to-create-your-first-hlf-network)
+- [Create your the HLF network](#Create-your-the-hlf-network)
   - [1. Create kubernetes cluster](#1-create-kubernetes-cluster)
     - [Using K3D](#using-k3d)
-    - [Using KinD](#using-kind)
   - [2. Install and configure Istio](#2-install-and-configure-istio)
     - [Configure Internal DNS](#configure-internal-dns)
   - [3. Install Hyperledger Fabric operator](#3-install-hyperledger-fabric-operator)
@@ -26,10 +21,9 @@ This workshop is divided in this steps:
     - [Deploy orderer](#deploy-orderer)
   - [6. Create a channel](#6-create-a-channel)
     - [Register and enrolling OrdererMSP identity](#register-and-enrolling-orderermsp-identity)
-    - [Register and enrolling Org1MSP identity](#register-and-enrolling-org1msp-identity)
+    - [Register and enrolling RegulatoryDepartmentMSP identity](#register-and-enrolling-org1msp-identity)
     - [Create main channel](#create-main-channel)
-  - [7.1 Join peers from Org1 to the channel](#71-join-peers-from-org1-to-the-channel)
-  - [7.2 Join peers from Org2 to the channel](#72-join-peers-from-org2-to-the-channel)
+  - [7.1 Join peers from RegulatoryDepartment to the channel](#71-join-peers-from-org1-to-the-channel)
     - [Register and enrolling Org2MSP identity](#register-and-enrolling-org2msp-identity)
   - [8. Install a chaincode](#8-install-a-chaincode)
     - [Prepare connection string for a peer](#prepare-connection-string-for-a-peer)
@@ -43,9 +37,6 @@ This workshop is divided in this steps:
     - [Invoke a transaction on the channel](#invoke-a-transaction-on-the-channel)
   - [13. Query assets in the channel](#13-query-assets-in-the-channel)
 - [13.1 Create an asset](#131-create-an-asset)
-- [13.2 Query the asset](#132-query-the-asset)
-  - [14. Completion](#14-completion)
-  - [Cleanup the environment](#cleanup-the-environment)
 
 In order to follow the workshop, you have two options, follow the Loom video or follow the steps below.
 
@@ -621,7 +612,6 @@ kubectl hlf identity create --name deliverer-admin --namespace default \
 
 ```bash
 export IDENT_8=$(printf "%8s" "")
-export ORDERER_TLS_CERT=$(kubectl get fabriccas ord-ca -o=jsonpath='{.status.tlsca_cert}' | sed -e "s/^/${IDENT_8}/" )
 export ORDERER0_TLS_CERT=$(kubectl get fabricorderernodes ord-node1 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
 
 kubectl apply -f - <<EOF
@@ -634,7 +624,7 @@ spec:
   adminOrdererOrganizations:
     - mspID: OrdererMSP
   adminPeerOrganizations:
-    - mspID: Org1MSP
+    - mspID: RegulatoryDepartmentMSP
   channelConfig:
     application:
       acls: null
@@ -664,8 +654,8 @@ spec:
     policies: null
   externalOrdererOrganizations: []
   peerOrganizations:
-    - mspID: Org1MSP
-      caName: "org1-ca"
+    - mspID: RegulatoryDepartmentMSP
+      caName: "regulatory-department-ca"
       caNamespace: "default"
   identities:
     OrdererMSP:
@@ -676,9 +666,9 @@ spec:
       secretKey: user.yaml
       secretName: orderer-admin-sign
       secretNamespace: default
-    Org1MSP:
+    RegulatoryDepartmentMSP:
       secretKey: user.yaml
-      secretName: org1-admin
+      secretName: regulatory-department-admin
       secretNamespace: default
   externalPeerOrganizations: []
   ordererOrganizations:
@@ -702,9 +692,9 @@ EOF
 ```
 
 
-## 7.1 Join peers from Org1 to the channel
+## 7.1 Join peers from RegulatoryDepartment to the channel
 
-To join the peers from Org1MSP to the channel `demo` we need to create a `FabricFollowerChannel` resource:
+To join the peers from RegulatoryDepartmentMSP to the channel `demo` we need to create a `FabricFollowerChannel` resource:
 
 ```bash
 
@@ -715,18 +705,16 @@ kubectl apply -f - <<EOF
 apiVersion: hlf.kungfusoftware.es/v1alpha1
 kind: FabricFollowerChannel
 metadata:
-  name: demo-org1msp
+  name: demo-regulatory-department-msp
 spec:
   anchorPeers:
-    - host: org1-peer0.default
-      port: 7051
-    - host: org1-peer1.default
+    - host: peer-regulatory-department.default
       port: 7051
   hlfIdentity:
     secretKey: user.yaml
-    secretName: org1-admin
+    secretName: regulatory-department-admin
     secretNamespace: default
-  mspId: Org1MSP
+  mspId: RegulatoryDepartmentMSP
   name: demo
   externalPeersToJoin: []
   orderers:
@@ -734,9 +722,7 @@ spec:
 ${ORDERER0_TLS_CERT}
       url: grpcs://ord-node1.default:7050
   peersToJoin:
-    - name: org1-peer0
-      namespace: default
-    - name: org1-peer1
+    - name: peer-regulatory-department
       namespace: default
 EOF
 
@@ -752,41 +738,25 @@ To prepare the connection string, we have to:
 1. Create `FabricNetworkConfig` object in the Kubernetes cluster
 2. Fetch the connection string from the Kubernetes secret
 
-3. Get connection string without users for organization Org1MSP and OrdererMSP
+3. Get connection string without users for organization RegulatoryDepartmentMSP and OrdererMSP
 
 ```bash
 
-# This identity will register and enroll the user for org1
-kubectl hlf identity create --name org1-admin --namespace default \
-    --ca-name org1-ca --ca-namespace default \
-    --ca ca --mspid Org1MSP --enroll-id explorer-admin --enroll-secret explorer-adminpw \
+# This identity will register and enroll the user for RegulatoryDepartment
+kubectl hlf identity create --name regulatory-department-admin --namespace default \
+    --ca-name regulatory-department-ca --ca-namespace default \
+    --ca ca --mspid RegulatoryDepartmentMSP --enroll-id explorer-admin --enroll-secret explorer-adminpw \
     --ca-enroll-id=enroll --ca-enroll-secret=enrollpw --ca-type=admin
 
 
-# This identity will register and enroll the user for org2
-kubectl hlf identity create --name org2-admin --namespace default \
-    --ca-name org2-ca --ca-namespace default \
-    --ca ca --mspid Org2MSP --enroll-id explorer-admin --enroll-secret explorer-adminpw \
-    --ca-enroll-id=enroll --ca-enroll-secret=enrollpw --ca-type=admin
-
-
-kubectl hlf networkconfig create --name=org1-cp \
-  -o Org1MSP -o OrdererMSP -c demo \
-  --identities=org1-admin.default --secret=org1-cp
-
-# if org2 is installed
-kubectl hlf networkconfig create --name=org2-cp \
-  -o Org2MSP -o OrdererMSP -c demo \
-  --identities=org2-admin.default --secret=org2-cp
-```
+kubectl hlf networkconfig create --name=regulatory-department-cp \
+  -o RegulatoryDepartmentMSP -o OrdererMSP -c demo \
+  --identities=regulatory-department-admin.default --secret=regulatory-department-cp
 
 ### Fetch the connection string from the Kubernetes secret
 
 ```bash
-kubectl get secret org1-cp -o jsonpath="{.data.config\.yaml}" | base64 --decode > org1.yaml
-
-# if org2 is installed
-kubectl get secret org2-cp -o jsonpath="{.data.config\.yaml}" | base64 --decode > org2.yaml
+kubectl get secret regulatory-department-cp -o jsonpath="{.data.config\.yaml}" | base64 --decode > regulatory-department.yaml
 ```
 
 ### Install chaincode
@@ -818,35 +788,8 @@ export PACKAGE_ID=$(kubectl hlf chaincode calculatepackageid --path=chaincode.tg
 echo "PACKAGE_ID=$PACKAGE_ID"
 
 kubectl hlf chaincode install --path=./chaincode.tgz \
-    --config=org1.yaml --language=golang --label=$CHAINCODE_LABEL --user=org1-admin-default --peer=org1-peer0.default
+    --config=regulatory-department.yaml --language=golang --label=$CHAINCODE_LABEL --user=regulatory-department-admin-default --peer=peer-regulatory-department.default
 
-kubectl hlf chaincode install --path=./chaincode.tgz \
-    --config=org1.yaml --language=golang --label=$CHAINCODE_LABEL --user=org1-admin-default --peer=org1-peer1.default
-
-
-# if org2 is installed
-kubectl hlf chaincode install --path=./chaincode.tgz \
-    --config=org2.yaml --language=golang --label=$CHAINCODE_LABEL --user=org2-admin-default --peer=org2-peer0.default
-
-kubectl hlf chaincode install --path=./chaincode.tgz \
-    --config=org2.yaml --language=golang --label=$CHAINCODE_LABEL --user=org2-admin-default --peer=org2-peer1.default
-
-
-```
-
-### Check if the chaincode is installed
-
-TO check if the chaincode is installed, we can use the following command:
-
-```bash
-kubectl hlf chaincode queryinstalled --config=org1.yaml --user=org1-admin-default --peer=org1-peer0.default
-```
-
-It should return something like this:
-
-```text
-PACKAGE ID                                                              LABEL   REFERENCES
-asset:f1056c50a23f901d2aa6893505eef057db548f0775003dabbfd1f500877acda8  asset   {"demo":[{"name":"asset","version":"1.0"}]}
 ```
 
 ## 9. Deploy chaincode container on cluster
@@ -864,22 +807,14 @@ kubectl hlf externalchaincode sync --image=kfsoftware/chaincode-external:latest 
 
 ## 10. Approve chaincode
 
-To approve the chaincode definition for org1, run the following command:
+To approve the chaincode definition for regulatory-department, run the following command:
 
 ```bash
 export SEQUENCE=1
 export VERSION="1.0"
-export ENDORSEMENT_POLICY="OR('Org1MSP.member')"
-# if org2 is installed
-export ENDORSEMENT_POLICY="OR('Org1MSP.member', 'Org2MSP.member')"
+export ENDORSEMENT_POLICY="OR('RegulatoryDepartmentMSP.member')"
 
-kubectl hlf chaincode approveformyorg --config=org1.yaml --user=org1-admin-default --peer=org1-peer0.default \
-    --package-id=$PACKAGE_ID \
-    --version "$VERSION" --sequence "$SEQUENCE" --name=asset \
-    --policy="${ENDORSEMENT_POLICY}" --channel=demo
-
-
-kubectl hlf chaincode approveformyorg --config=org2.yaml --user=org2-admin-default --peer=org2-peer0.default \
+kubectl hlf chaincode approveformyorg --config=regulatory-department.yaml --user=regulatory-department-admin-default --peer=peer-regulatory-department.default \
     --package-id=$PACKAGE_ID \
     --version "$VERSION" --sequence "$SEQUENCE" --name=asset \
     --policy="${ENDORSEMENT_POLICY}" --channel=demo
@@ -891,7 +826,7 @@ kubectl hlf chaincode approveformyorg --config=org2.yaml --user=org2-admin-defau
 To commit chaincode to the channel, run the following command:
 
 ```bash
-kubectl hlf chaincode commit --config=org1.yaml --user=org1-admin-default --mspid=Org1MSP \
+kubectl hlf chaincode commit --config=regulatory-department.yaml --user=regulatory-department-admin-default --mspid=RegulatoryDepartmentMSP \
     --version "$VERSION" --sequence "$SEQUENCE" --name=asset \
     --policy="${ENDORSEMENT_POLICY}" --channel=demo
 ```
@@ -904,97 +839,21 @@ If you want to deploy them for each organization just change the app names in bo
 Accessing the react app from the browser also the REACT_APP_API_URL in the confimap.yaml 
 must be configured properly, for local deployments set it with the kube node address. 
 
+Create a test-network folder and put inside it the public and private certificates (name the files as cert.pem and pk) and also the TLS 
+certificate of the CA name this last one as ca.crt.
+
 ```bash
 kubectl apply -f mongo-config.yaml
 kubectl apply -f mongo-secret.yaml
 kubectl apply -f mongo.yaml
 kubectl create secret generic express-certificates --from-file=test-network/
+kubectl apply -f persistent-volume.yaml
+kubectl apply -f react-app-build-job.yaml
 kubectl apply -f express-deployment.yaml
 kubectl apply -f configmap.yaml
-kubectl apply -f react-deployment.yaml
+kubectl apply -f nginx-deployment.yaml
 ```
 missing somthing about the certificate need to establish the gateway !! 
 
 ## 13. Test the system 
 Go with your browser to the right url and the port exposed by the web server
-
-
-## 12. Invoke a transaction on the channel
-
-Now that we have committed the chaincode to the channel, we can interact with it.
-
-We will use the kubectl plugin to interact with the chaincode. The plugin is a wrapper around the go-fabric SDK and provides a more user-friendly interface.
-
-### Invoke a transaction on the channel
-
-```bash
-kubectl hlf chaincode invoke --config=org1.yaml \
-    --user=org1-admin-default --peer=org1-peer0.default \
-    --chaincode=asset --channel=demo \
-    --fcn=initLedger
-
-# if org2 is installed
-kubectl hlf chaincode invoke --config=org2.yaml \
-    --user=org2-admin-default --peer=org2-peer0.default \
-    --chaincode=asset --channel=demo \
-    --fcn=initLedger
-
-```
-
-## 13. Query assets in the channel
-
-To query the chaincode, run the following command:
-
-```bash
-kubectl hlf chaincode query --config=org1.yaml \
-    --user=org1-admin-default --peer=org1-peer0.default \
-    --chaincode=asset --channel=demo \
-    --fcn=GetAllAssets -a '[]'
-```
-
-# 13.1 Create an asset
-
-Create an asset
-```bash
-kubectl hlf chaincode invoke --config=org1.yaml \
-    --user=org1-admin-default --peer=org1-peer0.default \
-    --chaincode=asset --channel=demo \
-    --fcn=CreateAsset -a "asset7" -a blue -a "5" -a "tom" -a "100"
-```
-
-# 13.2 Query the asset
-
-Query the asset we just created
-```bash
-kubectl hlf chaincode query --config=org1.yaml \
-    --user=org1-admin-default --peer=org1-peer0.default \
-    --chaincode=asset --channel=demo \
-    --fcn=ReadAsset -a asset7
-```
-
-## 14. Completion
-
-Congratulations! You have completed the workshop.
-
-At this point, you must have:
-
--   Ordering service with 3 nodes and a CA
--   Peer organization with a peer and a CA
--   A channel **demo** created
--   A chaincode install in peer0
--   A chaincode approved and committed
-
-If something went wrong or didn't work, please, open an issue.
-
-## Cleanup the environment
-
-```bash
-kubectl delete fabricorderernodes.hlf.kungfusoftware.es --all-namespaces --all
-kubectl delete fabricpeers.hlf.kungfusoftware.es --all-namespaces --all
-kubectl delete fabriccas.hlf.kungfusoftware.es --all-namespaces --all
-kubectl delete fabricchaincode.hlf.kungfusoftware.es --all-namespaces --all
-kubectl delete fabricmainchannels --all-namespaces --all
-kubectl delete fabricfollowerchannels --all-namespaces --all
-kubectl delete fabricnetworkconfigs --all-namespaces --all
-kubectl delete fabricidentities --all-namespaces --all
-```
