@@ -4,4 +4,4 @@ metadata:
   name: react-app-config
 data:
   REACT_APP_API_URL: "http://172.18.0.4:30200"
-  REACT_APP_ORG_NAME: "MANIFACTURER Client"
+  REACT_APP_ORG_NAME: "Regulatory Department Client"

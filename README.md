@@ -1,82 +1,25 @@
-# Deploy Blockchain-based System for Agri-Food Supply Chain Traceability
+# Deploy a Blockchain-based System for Agri-Food Supply Chain Traceability
 
-- [Create your the HLF network](#Create-your-the-hlf-network)
-  - [1. Create kubernetes cluster](#1-create-kubernetes-cluster)
-    - [Using K3D](#using-k3d)
-  - [2. Install and configure Istio](#2-install-and-configure-istio)
-    - [Configure Internal DNS](#configure-internal-dns)
-  - [3. Install Hyperledger Fabric operator](#3-install-hyperledger-fabric-operator)
-    - [Install the Kubectl plugin](#install-the-kubectl-plugin)
-  - [4.1 Deploy the first organization organization](#41-deploy-the-first-organization-organization)
-    - [Environment Variables for AMD and ARM](#environment-variables-for-amd-and-arm)
-    - [Deploy a certificate authority](#deploy-a-certificate-authority)
-    - [Deploy a peer](#deploy-a-peer)
-  - [4.2 Deploy a second peer organization](#42-deploy-a-second-peer-organization)
-    - [Environment Variables for AMD and ARM](#environment-variables-for-amd-and-arm-1)
-    - [Deploy a certificate authority](#deploy-a-certificate-authority-1)
-    - [Deploy a peer](#deploy-a-peer-1)
-  - [5. Deploy an orderer organization](#5-deploy-an-orderer-organization)
-    - [Create the certification authority](#create-the-certification-authority)
-    - [Register user `orderer`](#register-user-orderer)
-    - [Deploy orderer](#deploy-orderer)
-  - [6. Create a channel](#6-create-a-channel)
-    - [Register and enrolling OrdererMSP identity](#register-and-enrolling-orderermsp-identity)
-    - [Register and enrolling RegulatoryDepartmentMSP identity](#register-and-enrolling-org1msp-identity)
-    - [Create main channel](#create-main-channel)
-  - [7.1 Join peers from RegulatoryDepartment to the channel](#71-join-peers-from-org1-to-the-channel)
-    - [Register and enrolling Org2MSP identity](#register-and-enrolling-org2msp-identity)
-  - [8. Install a chaincode](#8-install-a-chaincode)
-    - [Prepare connection string for a peer](#prepare-connection-string-for-a-peer)
-    - [Fetch the connection string from the Kubernetes secret](#fetch-the-connection-string-from-the-kubernetes-secret)
-    - [Install chaincode](#install-chaincode)
-    - [Check if the chaincode is installed](#check-if-the-chaincode-is-installed)
-  - [9. Deploy chaincode container on cluster](#9-deploy-chaincode-container-on-cluster)
-  - [10. Approve chaincode](#10-approve-chaincode)
-  - [11. Commit chaincode](#11-commit-chaincode)
-  - [12. Invoke a transaction on the channel](#12-invoke-a-transaction-on-the-channel)
-    - [Invoke a transaction on the channel](#invoke-a-transaction-on-the-channel)
-  - [13. Query assets in the channel](#13-query-assets-in-the-channel)
-- [13.1 Create an asset](#131-create-an-asset)
+This work, made for the project of Dependable Distributed Systems course at Sapienza University, is
+based on the architecture presented in the following paper:
 
-In order to follow the workshop, you have two options, follow the Loom video or follow the steps below.
+**Marchese Angelo, and Orazio Tomarchio. "A blockchain-based system for agri-food supply chain traceability management." SN Computer Science 3.4 (2022): 279**.
 
-Run through the steps explaining what we are going to do and how to do it.
+[https://doi.org/10.1007/s42979-022-01148-3](https://doi.org/10.1007/s42979-022-01148-3)
 
 ## 1. Create kubernetes cluster
 
-To start deploying our red fabric we have to have a Kubernetes cluster. For this we will use KinD.
+To start deploying our network we first of all need to have a Kubernetes cluster.
 
-Ensure you have these ports available before creating the cluster:
+Also ensure you have these ports available before creating the cluster:
 
 -   80
 -   443
-
-If these ports are not available this tutorial will not work.
 
 ### Using K3D
 
 ```bash
 k3d cluster create  -p "80:30949@agent:0" -p "443:30950@agent:0" --agents 2 k8s-hlf
-```
-
-### Using KinD
-
-```bash
-cat << EOF > kind-config.yaml
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-  image: kindest/node:v1.27.3
-  extraPortMappings:
-  - containerPort: 30949
-    hostPort: 80
-  - containerPort: 30950
-    hostPort: 443
-EOF
-
-kind create cluster --config=./kind-config.yaml
-
 ```
 
 ## 2. Install and configure Istio
@@ -92,7 +35,6 @@ export PATH="$PATH:$PWD/istio-1.20.0/bin"
 Install Istio on the Kubernetes cluster:
 
 ```bash
-
 kubectl create namespace istio-system
 
 istioctl operator init
@@ -165,7 +107,6 @@ EOF
 This needs to be applied every time you restart the machine.
 
 ```bash
-
 kubectl apply -f - <<EOF
 kind: ConfigMap
 apiVersion: v1
@@ -214,7 +155,6 @@ To install helm: [https://helm.sh/docs/intro/install/](https://helm.sh/docs/intr
 helm repo add kfs https://kfsoftware.github.io/hlf-helm-charts --force-update
 
 helm upgrade --install hlf-operator --version=1.10.0 -- kfs/hlf-operator
-
 ```
 
 
@@ -229,7 +169,7 @@ Afterwards, the plugin can be installed with the following command:
 kubectl krew install hlf
 ```
 
-## 4.1 Deploy the first organization organization
+## 4. Deploy the organizations CA's and Peers
 
 ### Environment Variables for AMD and ARM
 
@@ -247,7 +187,7 @@ export CA_VERSION=1.5.7
 ### Deploy the RegulatoryDepartmentMSP certificate authority
 
 ```bash
-export STORAGE_CLASS=local-path # k3d storage class, "standard" for KinD
+export STORAGE_CLASS=local-path
 
 kubectl hlf ca create  --image=$CA_IMAGE --version=$CA_VERSION --storage-class=$STORAGE_CLASS --capacity=1Gi --name=regulatory-department-ca \
     --enroll-id=enroll --enroll-pw=enrollpw --hosts=regulatory-department-ca.localho.st --istio-port=443
@@ -273,7 +213,7 @@ kubectl hlf ca register --name=regulatory-department-ca --user=peer --secret=pee
 ### Deploy the RetailerMSP certificate authority
 
 ```bash
-export STORAGE_CLASS=local-path # k3d storage class, "standard" for KinD
+export STORAGE_CLASS=local-path
 
 kubectl hlf ca create  --image=$CA_IMAGE --version=$CA_VERSION --storage-class=$STORAGE_CLASS --capacity=1Gi --name=retailer-ca \
     --enroll-id=enroll --enroll-pw=enrollpw --hosts=retailer-ca.localho.st --istio-port=443
@@ -299,7 +239,7 @@ kubectl hlf ca register --name=retailer-ca --user=peer --secret=peerpw --type=pe
 ### Deploy the ProducerMSP certificate authority
 
 ```bash
-export STORAGE_CLASS=local-path # k3d storage class, "standard" for KinD
+export STORAGE_CLASS=local-path
 
 kubectl hlf ca create  --image=$CA_IMAGE --version=$CA_VERSION --storage-class=$STORAGE_CLASS --capacity=1Gi --name=producer-ca \
     --enroll-id=enroll --enroll-pw=enrollpw --hosts=producer-ca.localho.st --istio-port=443
@@ -325,7 +265,7 @@ kubectl hlf ca register --name=producer-ca --user=peer --secret=peerpw --type=pe
 ### Deploy the DelivererMSP certificate authority
 
 ```bash
-export STORAGE_CLASS=local-path # k3d storage class, "standard" for KinD
+export STORAGE_CLASS=local-path
 
 kubectl hlf ca create  --image=$CA_IMAGE --version=$CA_VERSION --storage-class=$STORAGE_CLASS --capacity=1Gi --name=deliverer-ca \
     --enroll-id=enroll --enroll-pw=enrollpw --hosts=deliverer-ca.localho.st --istio-port=443
@@ -351,7 +291,7 @@ kubectl hlf ca register --name=deliverer-ca --user=peer --secret=peerpw --type=p
 ### Deploy the ManufacturerMSP certificate authority
 
 ```bash
-export STORAGE_CLASS=local-path # k3d storage class, "standard" for KinD
+export STORAGE_CLASS=local-path
 
 kubectl hlf ca create  --image=$CA_IMAGE --version=$CA_VERSION --storage-class=$STORAGE_CLASS --capacity=1Gi --name=manufacturer-ca \
     --enroll-id=enroll --enroll-pw=enrollpw --hosts=manufacturer-ca.localho.st --istio-port=443
@@ -371,13 +311,11 @@ Register a user in the certification authority of the peer organization (Manufac
 # register user in CA for peers
 kubectl hlf ca register --name=manufacturer-ca --user=peer --secret=peerpw --type=peer \
  --enroll-id enroll --enroll-secret=enrollpw --mspid ManufacturerMSP
-
 ```
 
 ### Deploy the ManufacturerMSP peer 
 
 ```bash
-
 kubectl hlf peer create --statedb=leveldb --image=$PEER_IMAGE --version=$PEER_VERSION --storage-class=$STORAGE_CLASS --enroll-id=peer --mspid=ManufacturerMSP \
         --enroll-pw=peerpw --capacity=5Gi --name=manufacturer-peer --ca-name=manufacturer-ca.default \
         --hosts=peer-manufacturer.localho.st --istio-port=443
@@ -394,7 +332,6 @@ openssl s_client -connect peer-manufacturer.localho.st:443
 ### Deploy the RegulatoryDepartmentMSP peer 
 
 ```bash
-
 kubectl hlf peer create --statedb=leveldb --image=$PEER_IMAGE --version=$PEER_VERSION --storage-class=$STORAGE_CLASS --enroll-id=peer --mspid=RegulatoryDepartmentMSP \
         --enroll-pw=peerpw --capacity=5Gi --name=regulatory-department-peer --ca-name=regulatory-department-ca.default \
         --hosts=peer-regulatory-department.localho.st --istio-port=443
@@ -411,7 +348,6 @@ openssl s_client -connect peer-regulatory-department.localho.st:443
 ### Deploy the RetailerMSP peer 
 
 ```bash
-
 kubectl hlf peer create --statedb=leveldb --image=$PEER_IMAGE --version=$PEER_VERSION --storage-class=$STORAGE_CLASS --enroll-id=peer --mspid=RetailerMSP \
         --enroll-pw=peerpw --capacity=5Gi --name=retailer-peer --ca-name=retailer-ca.default \
         --hosts=peer-retailer.localho.st --istio-port=443
@@ -428,7 +364,6 @@ openssl s_client -connect peer-retailer.localho.st:443
 ### Deploy the ProducerMSP peer 
 
 ```bash
-
 kubectl hlf peer create --statedb=leveldb --image=$PEER_IMAGE --version=$PEER_VERSION --storage-class=$STORAGE_CLASS --enroll-id=peer --mspid=ProducerMSP \
         --enroll-pw=peerpw --capacity=5Gi --name=producer-peer --ca-name=producer-ca.default \
         --hosts=peer-producer.localho.st --istio-port=443
@@ -445,7 +380,6 @@ openssl s_client -connect peer-producer.localho.st:443
 ### Deploy the DelivererMSP peer 
 
 ```bash
-
 kubectl hlf peer create --statedb=leveldb --image=$PEER_IMAGE --version=$PEER_VERSION --storage-class=$STORAGE_CLASS --enroll-id=peer --mspid=DelivererMSP \
         --enroll-pw=peerpw --capacity=5Gi --name=deliverer-peer --ca-name=deliverer-ca.default \
         --hosts=peer-deliverer.localho.st --istio-port=443
@@ -459,7 +393,7 @@ Check that the peer is deployed and works:
 openssl s_client -connect peer-deliverer.localho.st:443
 ```
 
-## 5. Deploy an orderer organization
+## 5. Deploy the orderer organization
 
 To deploy an `Orderer` organization we have to:
 
@@ -470,7 +404,6 @@ To deploy an `Orderer` organization we have to:
 ### Create the certification authority
 
 ```bash
-
 kubectl hlf ca create  --image=$CA_IMAGE --version=$CA_VERSION --storage-class=$STORAGE_CLASS --capacity=1Gi --name=ord-ca \
     --enroll-id=enroll --enroll-pw=enrollpw --hosts=ord-ca.localho.st --istio-port=443
 
@@ -495,7 +428,6 @@ kubectl hlf ca register --name=ord-ca --user=orderer --secret=ordererpw \
 ### Deploy orderer
 
 ```bash
-
 kubectl hlf ordnode create --image=$ORDERER_IMAGE --version=$ORDERER_VERSION \
     --storage-class=$STORAGE_CLASS --enroll-id=orderer --mspid=OrdererMSP \
     --enroll-pw=ordererpw --capacity=2Gi --name=ord-node1 --ca-name=ord-ca.default \
@@ -549,7 +481,6 @@ kubectl hlf ca register --name=manufacturer-ca --namespace=default --user=admin 
 kubectl hlf identity create --name manufacturer-admin --namespace default \
     --ca-name manufacturer-ca --ca-namespace default \
     --ca ca --mspid ManufacturerMSP --enroll-id admin --enroll-secret adminpw
-
 ```
 
 ### Register and enrolling RegulatoryDepartmentMSP identity
@@ -563,7 +494,6 @@ kubectl hlf ca register --name=regulatory-department-ca --namespace=default --us
 kubectl hlf identity create --name regulatory-department-admin --namespace default \
     --ca-name regulatory-department-ca --ca-namespace default \
     --ca ca --mspid RegulatoryDepartmentMSP --enroll-id admin --enroll-secret adminpw
-
 ```
 
 ### Register and enrolling RetailerMSP identity
@@ -577,7 +507,6 @@ kubectl hlf ca register --name=retailer-ca --namespace=default --user=admin --se
 kubectl hlf identity create --name retailer-admin --namespace default \
     --ca-name retailer-ca --ca-namespace default \
     --ca ca --mspid RetailerMSP --enroll-id admin --enroll-secret adminpw
-
 ```
 
 ### Register and enrolling ProducerMSP identity
@@ -591,7 +520,6 @@ kubectl hlf ca register --name=producer-ca --namespace=default --user=admin --se
 kubectl hlf identity create --name producer-admin --namespace default \
     --ca-name producer-ca --ca-namespace default \
     --ca ca --mspid ProducerMSP --enroll-id admin --enroll-secret adminpw
-
 ```
 
 ### Register and enrolling DelivererMSP identity
@@ -605,7 +533,6 @@ kubectl hlf ca register --name=deliverer-ca --namespace=default --user=admin --s
 kubectl hlf identity create --name deliverer-admin --namespace default \
     --ca-name deliverer-ca --ca-namespace default \
     --ca ca --mspid DelivererMSP --enroll-id admin --enroll-secret adminpw
-
 ```
 
 ### Create main channel
@@ -688,19 +615,14 @@ spec:
 ${ORDERER0_TLS_CERT}
   
 EOF
-
 ```
 
 
-## 7.1 Join peers from RegulatoryDepartment to the channel
+## 7. Join peers from RegulatoryDepartment to the channel
 
 To join the peers from RegulatoryDepartmentMSP to the channel `demo` we need to create a `FabricFollowerChannel` resource:
 
 ```bash
-
-export IDENT_8=$(printf "%8s" "")
-export ORDERER0_TLS_CERT=$(kubectl get fabricorderernodes ord-node1 -o=jsonpath='{.status.tlsCert}' | sed -e "s/^/${IDENT_8}/" )
-
 kubectl apply -f - <<EOF
 apiVersion: hlf.kungfusoftware.es/v1alpha1
 kind: FabricFollowerChannel
@@ -725,7 +647,6 @@ ${ORDERER0_TLS_CERT}
     - name: peer-regulatory-department
       namespace: default
 EOF
-
 ```
 
 
@@ -741,7 +662,6 @@ To prepare the connection string, we have to:
 3. Get connection string without users for organization RegulatoryDepartmentMSP and OrdererMSP
 
 ```bash
-
 # This identity will register and enroll the user for RegulatoryDepartment
 kubectl hlf identity create --name regulatory-department-admin --namespace default \
     --ca-name regulatory-department-ca --ca-namespace default \
@@ -762,7 +682,6 @@ kubectl get secret regulatory-department-cp -o jsonpath="{.data.config\.yaml}" |
 ### Install chaincode
 
 ```bash
-
 # remove the code.tar.gz chaincode.tgz if they exist
 rm code.tar.gz chaincode.tgz
 export CHAINCODE_NAME=asset
@@ -789,7 +708,6 @@ echo "PACKAGE_ID=$PACKAGE_ID"
 
 kubectl hlf chaincode install --path=./chaincode.tgz \
     --config=regulatory-department.yaml --language=golang --label=$CHAINCODE_LABEL --user=regulatory-department-admin-default --peer=peer-regulatory-department.default
-
 ```
 
 ## 9. Deploy chaincode container on cluster
@@ -833,14 +751,15 @@ kubectl hlf chaincode commit --config=regulatory-department.yaml --user=regulato
 
 ## 12. Deploy the Web Server and the Application Server
 
-Now we deploy the application server with the mongo DB and the web server. 
-For simplicity we deploy show the steps to deploy just the one for the Maintainer MSP Organization
-If you want to deploy them for each organization just change the app names in both the YAML files.
-Accessing the react app from the browser also the REACT_APP_API_URL in the confimap.yaml 
-must be configured properly, for local deployments set it with the kube node address. 
+Now we deploy the application server with the mongo DB and the web server.
 
-Create a test-network folder and put inside it the public and private certificates (name the files as cert.pem and pk) and also the TLS 
-certificate of the CA name this last one as ca.crt.
+For simplicity we show the steps to deploy just the one for the Regulatory Department MSP Organization.
+If you want to deploy both servers for each organization you need to create new YAML files using as template the ones for the Regulatory Department and change them with the information from the corresponding organization.
+You also need to update the main channel adding the identity of the peer of the organization you want to add and also to repete the steps 7 and 8 of the guide with the peer informations.
+For accessing the react app from the browser you need also to change the REACT_APP_API_URL in the confimap.yaml, for local deployments set it with the Kubernetes node address. 
+
+Create a test-network folder and create inside of it a cert.pem and a pk files with inside, respectively, the regulatory-department-admin-default public and private keys and a ca.crt file with the TLS certificate of the regulatory-department-peer.
+You can find the content for this files in the regulatory-department.yaml that we fetched before.
 
 ```bash
 kubectl apply -f mongo-config.yaml
@@ -853,7 +772,6 @@ kubectl apply -f express-deployment.yaml
 kubectl apply -f configmap.yaml
 kubectl apply -f nginx-deployment.yaml
 ```
-missing somthing about the certificate need to establish the gateway !! 
 
 ## 13. Test the system 
-Go with your browser to the right url and the port exposed by the web server
+Go with your browser to your-node-url:30100 and test both functionalities
