@@ -620,7 +620,7 @@ EOF
 
 ## 7. Join peer from RegulatoryDepartment to the channel
 
-To join the peers from RegulatoryDepartmentMSP to the channel `demo` we need to create a `FabricFollowerChannel` resource:
+To join the peer from RegulatoryDepartmentMSP to the channel `demo` we need to create a `FabricFollowerChannel` resource:
 
 ```bash
 kubectl apply -f - <<EOF
